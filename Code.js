@@ -19,9 +19,6 @@ function findlabelledEmails() {
     }  
   }
   
-  Logger.log(periods.length);
-  Logger.log(periods);
-  
   for(x=0; x < periods.length; x++) {
     deleteEmails(periods[x]);
   }
@@ -36,18 +33,18 @@ function deleteEmails(period) {
   var numberToDelete = 0;
   var threads = GmailApp.search("label:gone-in-days/" + period.toString());
  
-  Logger.log("today: " + today);
-  Logger.log("labelled: " + threads.length);
+  Logger.log("No of emails found: " + threads.length);
  
   for( i=0;i < threads.length; i++) {
     var daysOld = Math.floor((today - threads[i].getMessages()[0].getDate()) / millisPerDay);
     
     if (daysOld > period) {
-      Logger.log(threads[i].getFirstMessageSubject() + " days old: " + daysOld);
+      Logger.log("Email Subject: " + threads[i].getFirstMessageSubject());
+      Logger.log("Email Age: " + daysOld);
       numberToDelete++;
-      //threads[i].moveToTrash();
+      threads[i].moveToTrash();
     }
   }
   
-  Logger.log("deleted: " + numberToDelete + " conversations");
+  Logger.log("No of emails deleted: " + numberToDelete);
 }
