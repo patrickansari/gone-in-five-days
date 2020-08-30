@@ -1,0 +1,27 @@
+{
+  "name": "gone-in-five-days",
+  "version": "1.0.0",
+  "description": "",
+  "main": "Code.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "mocha"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/patrickansari/gone-in-five-days.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/patrickansari/gone-in-five-days/issues"
+  },
+  "homepage": "https://github.com/patrickansari/gone-in-five-days#readme",
+  "devDependencies": {
+    "chai": "^4.2.0",
+    "mocha": "^8.1.1",
+    "sinon": "^9.0.3"
+  }
+}
