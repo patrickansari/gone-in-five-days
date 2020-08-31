@@ -1,50 +1,53 @@
+module.exports = function () {
+    this.findEmails = function (gmail, logger, now) {
+        findLabelledEmails(gmail, logger, now);
+    };
+};
 
-function findlabelledEmails() {
-  
-  var labels = GmailApp.getUserLabels();
-  var periods = [];
-  
-  for(i=0;i< labels.length; i++){
-    
-    var label = labels[i].getName(); 
-    var period;
-    
-    if(label.indexOf("gone-in-days") != -1 && label.indexOf("/") != -1) {
-      
-      period = parseInt(label.substring(label.indexOf("/")+1));
-     
-      if(!isNaN(period)) {
-        periods.push(period); 
-      }
-    }  
-  }
-  
-  for(x=0; x < periods.length; x++) {
-    deleteEmails(periods[x]);
-  }
-  
-} 
+/*
+    Don't copy anything above this line to Google Apps Script. ====================
+    Everything below here should be copied...
+ */
 
-function deleteEmails(period) {
-  
-  var today = new Date();
-  
-  var millisPerDay = 1000 * 60 * 60 * 24;
-  var numberToDelete = 0;
-  var threads = GmailApp.search("label:gone-in-days/" + period.toString());
- 
-  Logger.log("No of emails found: " + threads.length);
- 
-  for( i=0;i < threads.length; i++) {
-    var daysOld = Math.floor((today - threads[i].getMessages()[0].getDate()) / millisPerDay);
-    
-    if (daysOld > period) {
-      Logger.log("Email Subject: " + threads[i].getFirstMessageSubject());
-      Logger.log("Email Age: " + daysOld);
-      numberToDelete++;
-      threads[i].moveToTrash();
+const millisPerDay = 1000 * 60 * 60 * 24;
+
+function findLabelledEmails(gmailApp = GmailApp, logger = Logger, now = new Date()) {
+    let labels = gmailApp.getUserLabels();
+
+    for (let i = 0; i < labels.length; i++) {
+
+        let label = labels[i].getName();
+        let theSlash = label.indexOf("/");
+
+        if (theSlash !== -1) {
+            let period = parseInt(label.substring(theSlash + 1));
+            if (!isNaN(period)) {
+                if (label.indexOf("gone-in-days") !== -1) {
+                    housekeeping(period, gmailApp, logger, now, "label:gone-in-days/", 'moveToTrash');
+                }
+
+                if (label.indexOf("archive-in-days") !== -1) {
+                    housekeeping(period, gmailApp, logger, now, "label:inbox label:archive-in-days/", 'moveToArchive');
+                }
+            }
+        }
     }
-  }
-  
-  Logger.log("No of emails deleted: " + numberToDelete);
+}
+
+function housekeeping(period, gmailApp, logger, now, search, action) {
+    let total = 0;
+    let searchString = search + period.toString();
+    let threads = gmailApp.search(searchString);
+
+    for (i = 0; i < threads.length; i++) {
+        let daysOld = Math.floor((now - threads[i].getMessages()[0].getDate()) / millisPerDay);
+
+        if (daysOld > period) {
+            logger.log(threads[i].getFirstMessageSubject() + " days old: " + daysOld);
+            total++;
+            threads[i][action]();
+        }
+    }
+
+    logger.log('{'+searchString + '} ' + action + ': ' + total + ' of ' + threads.length + ' conversations');
 }
