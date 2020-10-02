@@ -21,26 +21,37 @@ function findLabelledEmails(gmailApp = GmailApp, logger = Logger, now = new Date
 
         if (theSlash !== -1) {
             let period = parseInt(label.substring(theSlash + 1));
-            if (!isNaN(period)) {
-                if (label.indexOf("gone-in-days") !== -1) {
-                    housekeeping(period, gmailApp, logger, now, "label:gone-in-days/", 'moveToTrash');
-                }
-
-                if (label.indexOf("archive-in-days") !== -1) {
-                    housekeeping(period, gmailApp, logger, now, "label:inbox label:archive-in-days/", 'moveToArchive');
-                }
+            if (!isNaN(period)
+                && label.indexOf("gone-in-days") !== -1) {
+                doHousekeeping(
+                    gmailApp,
+                    logger,
+                    now,
+                    "label:gone-in-days/" + period.toString(),
+                    period,
+                    'moveToTrash');
             }
+        } else if (label === "receipts") {
+            doHousekeeping(
+                gmailApp,
+                logger,
+                now,
+                "label:inbox label:receipts",
+                1,
+                'moveToArchive'
+            );
         }
     }
 }
 
-function housekeeping(period, gmailApp, logger, now, search, action) {
+
+function doHousekeeping(gmailApp, logger, now, searchString, period, action) {
     let total = 0;
-    let searchString = search + period.toString();
     let threads = gmailApp.search(searchString);
 
-    for (i = 0; i < threads.length; i++) {
-        let daysOld = Math.floor((now - threads[i].getMessages()[0].getDate()) / millisPerDay);
+    for (let i = 0; i < threads.length; i++) {
+        let msgDate = threads[i].getMessages()[0].getDate();
+        let daysOld = Math.floor((now - msgDate) / millisPerDay);
 
         if (daysOld > period) {
             logger.log(threads[i].getFirstMessageSubject() + " days old: " + daysOld);
@@ -49,5 +60,5 @@ function housekeeping(period, gmailApp, logger, now, search, action) {
         }
     }
 
-    logger.log('{'+searchString + '} ' + action + ': ' + total + ' of ' + threads.length + ' conversations');
+    logger.log('{' + searchString + '} ' + action + ': ' + total + ' of ' + threads.length + ' conversations');
 }
