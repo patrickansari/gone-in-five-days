@@ -10,6 +10,10 @@ module.exports = function () {
  */
 
 const millisPerDay = 1000 * 60 * 60 * 24;
+const archiveLabels = new Set([
+    'receipts',
+    'archive-in-days/1'
+]);
 
 function findLabelledEmails(gmailApp = GmailApp, logger = Logger, now = new Date()) {
     let labels = gmailApp.getUserLabels();
@@ -31,12 +35,12 @@ function findLabelledEmails(gmailApp = GmailApp, logger = Logger, now = new Date
                     period,
                     'moveToTrash');
             }
-        } else if (label === "receipts") {
+        } else if (archiveLabels.has(label)) {
             doHousekeeping(
                 gmailApp,
                 logger,
                 now,
-                "label:inbox label:receipts",
+                'label:inbox label:' + label,
                 1,
                 'moveToArchive'
             );
