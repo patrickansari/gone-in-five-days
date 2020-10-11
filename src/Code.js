@@ -1,19 +1,12 @@
-module.exports = function () {
-    this.findEmails = function (gmail, logger, now) {
-        findLabelledEmails(gmail, logger, now);
-    };
-};
-
-/*
-    Don't copy anything above this line to Google Apps Script. ====================
-    Everything below here should be copied...
- */
-
 const millisPerDay = 1000 * 60 * 60 * 24;
 const archiveLabels = new Set([
     'receipts',
     'archive-in-days/1'
 ]);
+
+function triggerMe() {
+    findLabelledEmails(GmailApp, Logger, new Date());
+}
 
 function findLabelledEmails(gmailApp = GmailApp, logger = Logger, now = new Date()) {
     let labels = gmailApp.getUserLabels();
