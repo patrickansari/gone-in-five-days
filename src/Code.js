@@ -1,57 +1,61 @@
 const millisPerDay = 1000 * 60 * 60 * 24;
-const archiveLabels = new Set([
-    'receipts',
-    'archive-in-days/1'
-]);
+
+// Label formats supported:
+// - archive-in-days/<n>
+// - gone-in-days/<n>
+const labelPolicies = [
+    { prefix: 'archive-in-days/', action: 'moveToArchive' },
+    { prefix: 'gone-in-days/', action: 'moveToTrash' }
+];
 
 function triggerMe() {
     findLabelledEmails(GmailApp, Logger, new Date());
 }
 
 function findLabelledEmails(gmailApp = GmailApp, logger = Logger, now = new Date()) {
-    let labels = gmailApp.getUserLabels();
+    const labels = gmailApp.getUserLabels();
 
     for (let i = 0; i < labels.length; i++) {
+        const label = labels[i].getName();
+        const rule = resolveRuleForLabel(label);
+        if (!rule) continue;
 
-        let label = labels[i].getName();
-        let theSlash = label.indexOf("/");
+        // Consistent behavior for archive + delete: label scope only
+        const searchString = 'label:' + label;
 
-        if (theSlash !== -1) {
-            let period = parseInt(label.substring(theSlash + 1));
-            if (!isNaN(period)
-                && label.indexOf("gone-in-days") !== -1) {
-                doHousekeeping(
-                    gmailApp,
-                    logger,
-                    now,
-                    "label:gone-in-days/" + period.toString(),
-                    period,
-                    'moveToTrash');
-            }
-        } else if (archiveLabels.has(label)) {
-            doHousekeeping(
-                gmailApp,
-                logger,
-                now,
-                'label:inbox label:' + label,
-                1,
-                'moveToArchive'
-            );
-        }
+        doHousekeeping(gmailApp, logger, now, searchString, rule.period, rule.action);
     }
 }
 
+function resolveRuleForLabel(label) {
+    for (let i = 0; i < labelPolicies.length; i++) {
+        const policy = labelPolicies[i];
+
+        if (!label.startsWith(policy.prefix)) continue;
+
+        const period = parseInt(label.substring(policy.prefix.length), 10);
+        if (!isNaN(period) && period >= 0) {
+            return {
+                action: policy.action,
+                period
+            };
+        }
+    }
+
+    return null;
+}
 
 function doHousekeeping(gmailApp, logger, now, searchString, period, action) {
     let total = 0;
-    let threads = gmailApp.search(searchString);
+    const threads = gmailApp.search(searchString);
 
     for (let i = 0; i < threads.length; i++) {
-        let msgDate = threads[i].getMessages()[0].getDate();
-        let daysOld = Math.floor((now - msgDate) / millisPerDay);
+        const msgDate = threads[i].getMessages()[0].getDate();
+        const daysOld = Math.floor((now - msgDate) / millisPerDay);
 
+        // Perform action on the configured day (not the day after)
         if (daysOld >= period) {
-            logger.log(threads[i].getFirstMessageSubject() + " days old: " + daysOld);
+            logger.log(threads[i].getFirstMessageSubject() + ' days old: ' + daysOld);
             total++;
             threads[i][action]();
         }
