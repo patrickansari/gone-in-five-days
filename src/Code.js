@@ -50,7 +50,7 @@ function doHousekeeping(gmailApp, logger, now, searchString, period, action) {
         let msgDate = threads[i].getMessages()[0].getDate();
         let daysOld = Math.floor((now - msgDate) / millisPerDay);
 
-        if (daysOld > period) {
+        if (daysOld >= period) {
             logger.log(threads[i].getFirstMessageSubject() + " days old: " + daysOld);
             total++;
             threads[i][action]();
